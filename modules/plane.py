@@ -4,27 +4,22 @@ pygame.init()
 
 
 class Plane(pygame.sprite.Sprite):
-    def __init__(self, coord, speed, src="data/pics/plane.png"):
+    def __init__(self, coords):
         super().__init__()
 
-        self.rect = coord
-        self.speed = list(speed)
-        self.image = pygame.image.load(src).convert_alpha()
+        self.image = pygame.image.load("data/pics/plane.png")
+        self.image.set_colorkey((255, 255, 255))
+        self.rect = pygame.Rect(coords[0], coords[1], self.image.get_width(), self.image.get_height())
         self.angle = 0
 
-    def update(self, event):
-        self.rect = (self.rect[0] + self.speed[0] * cos(radians(self.angle)),
-                     self.rect[1] + self.speed[1] * sin(radians(self.angle)))
-        print(self.rect)
-        print(self.angle)
-        print("----")
-        if event.type == pygame.KEYDOWN:
-            self.on_click_button(event.key)
+    def update(self):
+        self.rect.x += cos(radians(self.angle)) * 10
+        self.rect.y += sin(radians(self.angle)) * 10
 
-    def on_click_button(self, key):
+    def clicked_button(self, key):
         if key == pygame.K_w or key == pygame.K_UP:
-            self.angle += 2
-            self.image = pygame.transform.rotate(self.image, self.angle)
-        elif key == pygame.K_s or key == pygame.K_DOWN:
             self.angle -= 2
-            self.image = pygame.transform.rotate(self.image, self.angle)
+            self.image.set_colorkey((255, 255, 255))
+        elif key == pygame.K_s or key == pygame.K_DOWN:
+            self.angle += 2
+            self.image.set_colorkey((255, 255, 255))

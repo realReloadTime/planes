@@ -1,32 +1,80 @@
 import pygame
 from modules.plane import Plane
+from modules.camera import Camera
 
 pygame.init()
-window_size = 1000, 500
-fullscreen = True
-background_color = (255, 255, 255)
-fps = 60
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
+pygame.display.set_caption("")
+WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
 
-if not fullscreen:
-    screen = pygame.display.set_mode(window_size)
-else:
-    screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-window_size = pygame.display.get_window_size()
-pygame.display.set_caption("САМОЛЕТЫ")
-clock = pygame.time.Clock()
 
-sprites = pygame.sprite.Group()
-sprites.add(Plane((0, 50), (1, 0)))
+class Sky(pygame.sprite.Sprite):
+    def __init__(self):
+        super().__init__()
+
+        self.image = pygame.image.load("data/pics/sky.png")
+        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
+
+
+class Ground(pygame.sprite.Sprite):
+    def __init__(self, sky_height):
+        super().__init__()
+
+        self.image = pygame.image.load("data/pics/ground.png")
+        self.rect = pygame.Rect(0, sky_height, self.image.get_width(), self.image.get_height())
+
+
+def camera_configure(camera, target_rect):
+    l, t, _, _ = target_rect
+    _, _, w, h = camera
+    l, t = -l + WIN_WIDTH / 2, -t + WIN_HEIGHT / 2
+
+    l = min(0, l)  # Не движемся дальше левой границы
+    l = max(-(camera.width - WIN_WIDTH), l)  # Не движемся дальше правой границы
+    t = max(-(camera.height - WIN_HEIGHT), t)  # Не движемся дальше нижней границы
+    t = min(0, t)  # Не движемся дальше верхней границы
+
+    return pygame.Rect(l, t, w, h)
+
+
+sky = Sky()
+ground = Ground(sky.image.get_height())
+plane = Plane((0, 1500))
+print(sky.rect, ground.rect)
+total_width = ground.image.get_width()
+total_height = ground.image.get_height() + sky.image.get_height()
+camera = Camera(camera_configure, total_width, total_height)
+
+entities = pygame.sprite.Group()
+timer = pygame.time.Clock()
+FPS = 60
+
+entities.add(sky)
+entities.add(ground)
+entities.add(plane)
+# entities.add()
+
+move = False
+cur_key = None
 running = True
 while running:
-    screen.fill(background_color)
     for event in pygame.event.get():
-        if event.type == pygame.QUIT:
+        if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
             running = False
-        elif event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
-            running = False
-    sprites.draw(screen)
-    sprites.update(event)
-    clock.tick(fps)
+            break
+        elif event.type == pygame.KEYDOWN:
+            move = True
+            cur_key = event.key
+        elif event.type == pygame.KEYUP:
+            move = False
+
+    if move:
+        plane.clicked_button(cur_key)
+
+    camera.update(plane)
+    plane.update()
+    entities.draw(screen)
+    for e in entities:
+        screen.blit(e.image, camera.apply(e))
     pygame.display.update()
-pygame.quit()
+    timer.tick(FPS)
