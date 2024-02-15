@@ -41,9 +41,10 @@ def camera_configure(camera, target_rect):
 def main():
     sky = Sky()
     ground = Ground(sky.image.get_height())
-    plane = Plane((0, 1500))
+    plane = Plane((0, 1500), sky.rect.height)
     total_width = ground.image.get_width()
     total_height = ground.image.get_height() + sky.image.get_height()
+    print(total_height, total_width)
     camera = Camera(camera_configure, total_width, total_height)
 
     entities = pygame.sprite.Group()
@@ -70,6 +71,8 @@ def main():
                     if repeat:
                         main()
                         return
+                if event.key == pygame.K_1:
+                    plane.death()
                 move = True
                 cur_key = event.key
             elif event.type == pygame.KEYUP:

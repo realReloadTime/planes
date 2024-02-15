@@ -4,9 +4,10 @@ pygame.init()
 
 
 class Plane(pygame.sprite.Sprite):
-    def __init__(self, coords):
+    def __init__(self, coords, sky_height):
         super().__init__()
 
+        self.sky_height = sky_height
         self.image = pygame.image.load("data/pics/plane.png")
         self.orig_image = self.image
         self.image.set_colorkey((255, 255, 255))
@@ -19,6 +20,9 @@ class Plane(pygame.sprite.Sprite):
         if self.alive:
             self.rect.x += cos(radians(self.angle)) * 10
             self.rect.y += sin(radians(self.angle)) * 10
+        else:
+            if self.rect.y < self.sky_height:
+                self.rect.y += 4
 
     def clicked_button(self, key):
         if self.alive:
