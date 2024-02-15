@@ -8,11 +8,12 @@ class Bullet(pygame.sprite.Sprite):
         super().__init__()
 
         self.name = 'bullet'
+        self.angle = angle
         self.image = pygame.image.load("data/pics/bullet.png")
+        self.image = pygame.transform.rotozoom(self.image, -self.angle, 1)
         self.image.set_colorkey((255, 255, 255))
         self.rect = pygame.Rect(coords[0], coords[1], self.image.get_width(), self.image.get_height())
         self.speed = speed
-        self.angle = angle
         self.W, self.H = total_width, total_height
 
     def update(self):
