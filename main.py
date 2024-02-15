@@ -2,6 +2,7 @@ import pygame
 from modules.plane import Plane
 from modules.camera import Camera
 from modules.tank import Tank
+from modules.bullet import Bullet
 from random import randint
 
 pygame.init()
@@ -58,7 +59,7 @@ def main():
     font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 
     entities = pygame.sprite.Group()
-    enemies = pygame.sprite.Group()
+    bullets = pygame.sprite.Group()
 
     timer = pygame.time.Clock()
 
@@ -66,8 +67,7 @@ def main():
     entities.add(ground)
     entities.add(plane)
     for i in range(5):
-        entities.add(Tank((randint(800, total_width), randint(0, sky.rect.height - ground.rect.height)),
-                        sky.rect.height, ground.rect.height))
+        entities.add(Tank((randint(800, total_width), randint(0, sky.rect.height - ground.rect.height)), sky.rect.height, ground.rect.height))
 
     move = False
     cur_key = None
@@ -86,6 +86,10 @@ def main():
                         return
                 if event.key == pygame.K_1:
                     plane.death()
+                if event.key == pygame.K_SPACE and plane.alive:
+                    new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle, 20, total_width, total_height)
+                    entities.add(new_bullet)
+                    bullets.add(new_bullet)
                 move = True
                 cur_key = event.key
             elif event.type == pygame.KEYUP:
@@ -104,13 +108,21 @@ def main():
         camera.update(plane)
         plane.update()
         for e in entities:
-            if e.name == 'tank':
+
+            if e.name == 'tank' or e.name == 'bullet':
                 e.update()
             if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground'):
                 plane.death()
                 if e.name == 'tank':
                     balance += 1
                     e.kill()
+            for b in bullets:
+                if b.is_collided_with(e) and e.name == 'tank':
+                    balance += 1
+                    b.kill()
+                    e.kill()
+                    entities.add(Tank((randint(max(plane.rect.x + 500, 1000), total_width), randint(0, sky.rect.height - ground.rect.height)),
+                                      sky.rect.height, ground.rect.height))
             screen.blit(e.image, camera.apply(e))
         screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
         pygame.display.update()
