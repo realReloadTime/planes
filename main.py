@@ -1,4 +1,5 @@
 import pygame
+import json
 from modules.plane import Plane
 from modules.camera import Camera
 from modules.tank import Tank
@@ -12,6 +13,8 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
 FPS = 60
+settings = json.load(open('data/settings.json', 'r'))
+print(settings)
 
 
 class Sky(pygame.sprite.Sprite):
@@ -45,8 +48,11 @@ def camera_configure(camera, target_rect):
     return pygame.Rect(l, t, w, h)
 
 
+def preview():
+    pass
+
+
 def main():
-    repeat = False
     balance = 0
 
     sky = Sky()
@@ -67,7 +73,8 @@ def main():
     entities.add(ground)
     entities.add(plane)
     for i in range(5):
-        entities.add(Tank((randint(800, total_width), randint(0, sky.rect.height - ground.rect.height)), sky.rect.height, ground.rect.height))
+        entities.add(
+            Tank((randint(800, total_width), randint(0, sky.rect.height - ground.rect.height)), ground))
 
     move = False
     cur_key = None
@@ -80,10 +87,8 @@ def main():
                 break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    repeat = not repeat
-                    if repeat:
-                        main()
-                        return
+                    main()
+                    return
                 if event.key == pygame.K_1:
                     plane.death()
                 if event.key == pygame.K_SPACE and plane.alive:
@@ -121,8 +126,8 @@ def main():
                     balance += 1
                     b.kill()
                     e.kill()
-                    entities.add(Tank((randint(max(plane.rect.x + 500, 1000), total_width), randint(0, sky.rect.height - ground.rect.height)),
-                                      sky.rect.height, ground.rect.height))
+                    entities.add(Tank((randint(0, total_width - 200),
+                                       randint(-200, 300)), ground))
             screen.blit(e.image, camera.apply(e))
         screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
         pygame.display.update()
