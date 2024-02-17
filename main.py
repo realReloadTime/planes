@@ -12,7 +12,7 @@ pygame.font.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
-FPS = 60
+FPS = 300
 settings = json.load(open('data/settings.json', 'r'))
 print(settings)
 
@@ -54,7 +54,6 @@ def preview():
 
 def main():
     balance = 0
-
     sky = Sky()
     ground = Ground(sky.image.get_height())
     plane = Plane((0, 1150), sky.rect.height)
@@ -74,7 +73,7 @@ def main():
     entities.add(plane)
     for i in range(5):
         entities.add(
-            Tank((randint(800, total_width), randint(0, sky.rect.height - ground.rect.height)), ground))
+            Tank((randint(800, total_width), randint(0, 200)), ground))
 
     move = False
     cur_key = None
@@ -113,21 +112,22 @@ def main():
         camera.update(plane)
         plane.update()
         for e in entities:
-
             if e.name == 'tank' or e.name == 'bullet':
                 e.update()
             if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground'):
-                plane.death()
-                if e.name == 'tank':
+                if e.name == 'tank' and not e.death:
                     balance += 1
-                    e.kill()
+                    plane.death()
+                    e.death = True
+                elif e.name == 'ground':
+                    plane.death()
             for b in bullets:
-                if b.is_collided_with(e) and e.name == 'tank':
+                if b.is_collided_with(e) and e.name == 'tank' and not e.death:
                     balance += 1
                     b.kill()
-                    e.kill()
-                    entities.add(Tank((randint(0, total_width - 200),
-                                       randint(-200, 300)), ground))
+                    e.death = True
+                    entities.add(Tank((randint(0, total_width - 200), randint(-200, 300)), ground))
+                    break
             screen.blit(e.image, camera.apply(e))
         screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
         pygame.display.update()
