@@ -4,6 +4,7 @@ from modules.plane import Plane
 from modules.camera import Camera
 from modules.tank import Tank
 from modules.bullet import Bullet
+from modules.buttons import ButtonText
 from random import randint
 
 pygame.init()
@@ -12,7 +13,7 @@ pygame.font.init()
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
-FPS = 300
+FPS = 60
 settings = json.load(open('data/settings.json', 'r'))
 print(settings)
 
@@ -48,11 +49,30 @@ def camera_configure(camera, target_rect):
     return pygame.Rect(l, t, w, h)
 
 
+def clicked_start():
+    print('Начинаем игру')
+
+
 def preview():
-    pass
+    running = True
+    button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' НАЧАТЬ ', 150, clicked_start,
+                              (0, 255, 0), (0, 0, 255))
+    button_start.centerize()
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                running = False
+                break
+            if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION) and button_start.update(
+                    event):
+                running = False
+        screen.fill((0, 0, 0))
+        button_start.draw(screen)
+        pygame.display.flip()
 
 
 def main():
+    preview()
     balance = 0
     sky = Sky()
     ground = Ground(sky.image.get_height())
@@ -130,7 +150,7 @@ def main():
                     break
             screen.blit(e.image, camera.apply(e))
         screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
-        pygame.display.update()
+        pygame.display.flip()
         timer.tick(FPS)
 
 
