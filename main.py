@@ -1,18 +1,28 @@
 import pygame
+import json
 from modules.plane import Plane
 from modules.camera import Camera
+from modules.tank import Tank
+from modules.bullet import Bullet
+from modules.buttons import ButtonText
+from random import randint
 
 pygame.init()
+pygame.font.init()
+
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
-repeat = False
+FPS = 60
+settings = json.load(open('data/settings.json', 'r'))
+print(settings)
 
 
 class Sky(pygame.sprite.Sprite):
     def __init__(self):
         super().__init__()
 
+        self.name = 'sky'
         self.image = pygame.image.load("data/pics/sky.png")
         self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
 
@@ -21,6 +31,7 @@ class Ground(pygame.sprite.Sprite):
     def __init__(self, sky_height):
         super().__init__()
 
+        self.name = 'ground'
         self.image = pygame.image.load("data/pics/ground.png")
         self.rect = pygame.Rect(0, sky_height, self.image.get_width(), self.image.get_height())
 
@@ -38,41 +49,71 @@ def camera_configure(camera, target_rect):
     return pygame.Rect(l, t, w, h)
 
 
+def clicked_start():
+    print('Начинаем игру')
+
+
+def preview():
+    running = True
+    button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' НАЧАТЬ ', 150, clicked_start,
+                              (0, 255, 0), (0, 0, 255))
+    button_start.centerize()
+    while running:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                running = False
+                break
+            if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION) and button_start.update(
+                    event):
+                running = False
+        screen.fill((0, 0, 0))
+        button_start.draw(screen)
+        pygame.display.flip()
+
+
 def main():
+    preview()
+    balance = 0
     sky = Sky()
     ground = Ground(sky.image.get_height())
-    plane = Plane((0, 1500), sky.rect.height)
+    plane = Plane((0, 1150), sky.rect.height)
     total_width = ground.image.get_width()
     total_height = ground.image.get_height() + sky.image.get_height()
     print(total_height, total_width)
     camera = Camera(camera_configure, total_width, total_height)
+    font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 
     entities = pygame.sprite.Group()
+    bullets = pygame.sprite.Group()
+
     timer = pygame.time.Clock()
-    FPS = 60
 
     entities.add(sky)
     entities.add(ground)
     entities.add(plane)
-    # entities.add()
+    for i in range(5):
+        entities.add(
+            Tank((randint(800, total_width), randint(0, 200)), ground))
 
     move = False
     cur_key = None
     running = True
     while running:
+        balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {balance}', False, (0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 running = False
                 break
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_r:
-                    global repeat
-                    repeat = not repeat
-                    if repeat:
-                        main()
-                        return
+                    main()
+                    return
                 if event.key == pygame.K_1:
                     plane.death()
+                if event.key == pygame.K_SPACE and plane.alive:
+                    new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle, 20, total_width, total_height)
+                    entities.add(new_bullet)
+                    bullets.add(new_bullet)
                 move = True
                 cur_key = event.key
             elif event.type == pygame.KEYUP:
@@ -82,8 +123,6 @@ def main():
             plane.clicked_button(cur_key)
         if plane.rect.x > total_width + plane.rect.width // 2:
             plane.rect.x = -plane.rect.width // 2
-        if plane.rect.y > total_height - ground.rect.height:
-            plane.death()
         if plane.rect.x < -plane.rect.width:
             plane.rect.x = total_width
         if plane.rect.y < -plane.rect.width - 50:
@@ -92,10 +131,26 @@ def main():
             plane.rect.y = -plane.rect.height - 20
         camera.update(plane)
         plane.update()
-        entities.draw(screen)
         for e in entities:
+            if e.name == 'tank' or e.name == 'bullet':
+                e.update()
+            if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground'):
+                if e.name == 'tank' and not e.death:
+                    balance += 1
+                    plane.death()
+                    e.death = True
+                elif e.name == 'ground':
+                    plane.death()
+            for b in bullets:
+                if b.is_collided_with(e) and e.name == 'tank' and not e.death:
+                    balance += 1
+                    b.kill()
+                    e.death = True
+                    entities.add(Tank((randint(0, total_width - 200), randint(-200, 300)), ground))
+                    break
             screen.blit(e.image, camera.apply(e))
-        pygame.display.update()
+        screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
+        pygame.display.flip()
         timer.tick(FPS)
 
 
