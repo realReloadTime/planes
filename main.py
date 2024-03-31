@@ -11,11 +11,15 @@ pygame.init()
 pygame.font.init()
 
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-pygame.display.set_caption("")
+pygame.display.set_caption("САМОЛЕТИК")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
 FPS = 60
 settings = json.load(open('data/settings.json', 'r'))
-print(settings)
+if "total_score" not in settings:
+    settings["total_score"] = 0
+if "music" not in settings:
+    settings["music"] = 0
+font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 
 
 class Sky(pygame.sprite.Sprite):
@@ -53,70 +57,81 @@ def clicked_start():
     print('Начинаем игру')
 
 
-def preview():
+def preview():  # menu screen
     running = True
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' НАЧАТЬ ', 150, clicked_start,
                               (0, 255, 0), (0, 0, 255))
     button_start.centerize()
+    texts = ['В этой игре нужно управлять самолетом и уничтожать вражескую технику.',
+             'Столкновение с землей и чужой техникой может привести к смерти.', '',
+             'Управление:', 'ДВИЖЕНИЕ - Стрелки вверх/вниз или W/S,',
+             'СТРЕЛЬБА - Пробел,', 'R - перезапуск, 1 - самоуничтожение']
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                running = False
-                break
-            if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION) and button_start.update(
-                    event):
+                return
+            if (event.type == pygame.MOUSEBUTTONDOWN or
+                event.type == pygame.MOUSEMOTION) and button_start.update(event):
                 running = False
         screen.fill((0, 0, 0))
+        for text in texts:
+            txt = font_for_text.render(text, False, (255, 255, 255))
+            screen.blit(txt, ((WIN_WIDTH - txt.get_width()) // 2, txt.get_height() * texts.index(text) + 5))
         button_start.draw(screen)
         pygame.display.flip()
+    main()
 
 
-def main():
-    preview()
-    balance = 0
-    sky = Sky()
-    ground = Ground(sky.image.get_height())
-    plane = Plane((0, 1150), sky.rect.height)
-    total_width = ground.image.get_width()
+def main():  # game cycle
+    balance = 0  # current score
+    prev_balance = 0  # previous score for editing speed plane
+    sky = Sky()  # sky box
+    ground = Ground(sky.image.get_height())  # ground box
+    plane = Plane((0, 1150), sky.rect.height)  # main character
+    total_width = ground.image.get_width()  # get size of window
     total_height = ground.image.get_height() + sky.image.get_height()
     print(total_height, total_width)
-    camera = Camera(camera_configure, total_width, total_height)
-    font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
+    camera = Camera(camera_configure, total_width, total_height)  # camera on main character
 
     entities = pygame.sprite.Group()
     bullets = pygame.sprite.Group()
-
     timer = pygame.time.Clock()
 
     entities.add(sky)
     entities.add(ground)
     entities.add(plane)
     for i in range(5):
-        entities.add(
-            Tank((randint(800, total_width), randint(0, 200)), ground))
+        entities.add(Tank((randint(800, total_width), randint(0, 200)), ground))
 
     move = False
     cur_key = None
     running = True
     while running:
         balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {balance}', False, (0, 0, 0))
+        total_text = font_for_text.render(f'РЕКОРД: {settings["total_score"]}', False, (150, 0, 0))
         for event in pygame.event.get():
-            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and
+                                             event.key == pygame.K_ESCAPE):  # exit event
                 running = False
+                if balance > settings["total_score"]:
+                    settings["total_score"] = balance
                 break
-            elif event.type == pygame.KEYDOWN:
-                if event.key == pygame.K_r:
+            elif event.type == pygame.KEYDOWN:  # button pressed
+                if event.key == pygame.K_r:  # restart button (R)
+                    if balance > settings["total_score"]:
+                        settings["total_score"] = balance
                     main()
                     return
-                if event.key == pygame.K_1:
+                if event.key == pygame.K_1:  # suicide button (1)
                     plane.death()
-                if event.key == pygame.K_SPACE and plane.alive:
-                    new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle, 20, total_width, total_height)
-                    entities.add(new_bullet)
-                    bullets.add(new_bullet)
-                move = True
+                if event.key == pygame.K_SPACE and plane.alive:  # fire button (SPACE)
+                    new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle,
+                                        20, total_width, total_height)  # create new button
+                    entities.add(new_bullet)  # add to layout
+                    bullets.add(new_bullet)  # add to group of buttons
+                move = True  # is plane rotating?
                 cur_key = event.key
-            elif event.type == pygame.KEYUP:
+            elif event.type == pygame.KEYUP:  # event to stop rotating plane
                 move = False
 
         if move:
@@ -149,10 +164,16 @@ def main():
                     entities.add(Tank((randint(0, total_width - 200), randint(-200, 300)), ground))
                     break
             screen.blit(e.image, camera.apply(e))
-        screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width(), balance_text.get_height()))
+        screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width() - 5, 5))
+        screen.blit(total_text, (WIN_WIDTH - total_text.get_width() - 5,
+                                 total_text.get_height() + balance_text.get_height()))
         pygame.display.flip()
         timer.tick(FPS)
+        if balance % 5 == 0 and balance != 0 and prev_balance != balance:
+            plane.speed += .5
+        prev_balance = balance
+    json.dump(settings, open('data/settings.json', 'w'))
 
 
 if __name__ == '__main__':
-    main()
+    preview()  # preview screen(menu)
