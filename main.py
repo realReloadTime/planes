@@ -4,7 +4,7 @@ from modules.plane import Plane
 from modules.camera import Camera
 from modules.tank import Tank
 from modules.bullet import Bullet
-from modules.buttons import ButtonText
+from modules.buttons import ButtonText, ButtonIcon
 from random import randint
 
 pygame.init()
@@ -18,8 +18,14 @@ settings = json.load(open('data/settings.json', 'r'))
 if "total_score" not in settings:
     settings["total_score"] = 0
 if "music" not in settings:
-    settings["music"] = 0
+    settings["music"] = 1
 font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
+pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")
+if settings["music"]:
+    pygame.mixer.music.set_volume(.2)
+    pygame.mixer.music.play(-1)
+fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')
+bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')
 
 
 class Sky(pygame.sprite.Sprite):
@@ -57,6 +63,24 @@ def clicked_start():
     print('Начинаем игру')
 
 
+button_volume = ButtonIcon((WIN_WIDTH // 2, 0), "data/pics/volume_on.png",
+                           "data/pics/volume_off.png", 1)
+button_volume.rect[1] = WIN_HEIGHT - button_volume.rect[3]
+
+
+def sound_check():
+    if button_volume.status:
+        pygame.mixer.music.unpause()
+        settings["music"] = 1
+    else:
+        pygame.mixer.music.pause()
+        settings["music"] = 0
+    print(settings["music"], button_volume.status)
+
+
+button_volume.action = sound_check
+
+
 def preview():  # menu screen
     running = True
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' НАЧАТЬ ', 150, clicked_start,
@@ -73,11 +97,14 @@ def preview():  # menu screen
             if (event.type == pygame.MOUSEBUTTONDOWN or
                 event.type == pygame.MOUSEMOTION) and button_start.update(event):
                 running = False
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button_volume.update(event)
         screen.fill((0, 0, 0))
         for text in texts:
             txt = font_for_text.render(text, False, (255, 255, 255))
             screen.blit(txt, ((WIN_WIDTH - txt.get_width()) // 2, txt.get_height() * texts.index(text) + 5))
         button_start.draw(screen)
+        button_volume.draw(screen)
         pygame.display.flip()
     main()
 
@@ -106,6 +133,7 @@ def main():  # game cycle
     move = False
     cur_key = None
     running = True
+    fly_sound.play(-1)
     while running:
         balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {balance}', False, (0, 0, 0))
         total_text = font_for_text.render(f'РЕКОРД: {settings["total_score"]}', False, (150, 0, 0))
@@ -125,6 +153,7 @@ def main():  # game cycle
                 if event.key == pygame.K_1:  # suicide button (1)
                     plane.death()
                 if event.key == pygame.K_SPACE and plane.alive:  # fire button (SPACE)
+                    bul_sound.play()
                     new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle,
                                         20, total_width, total_height)  # create new button
                     entities.add(new_bullet)  # add to layout
@@ -172,6 +201,8 @@ def main():  # game cycle
         if balance % 5 == 0 and balance != 0 and prev_balance != balance:
             plane.speed += .5
         prev_balance = balance
+    if not plane.alive:
+        fly_sound.stop()
     json.dump(settings, open('data/settings.json', 'w'))
 
 
