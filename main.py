@@ -14,6 +14,7 @@ screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
 pygame.display.set_caption("САМОЛЕТИК")
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
 FPS = 60
+
 settings = json.load(open('data/settings.json', 'r'))
 if "total_score" not in settings:
     settings["total_score"] = 0
