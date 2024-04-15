@@ -5,49 +5,36 @@ from modules.camera import Camera
 from modules.tank import Tank
 from modules.bullet import Bullet
 from modules.buttons import ButtonText, ButtonIcon
+from modules.background import Background, Ground
 from random import randint
 
-pygame.init()
-pygame.font.init()
+pygame.init()  # always uses
+pygame.font.init()  # ||-||-||
+# ---------------------
 
-screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)
-pygame.display.set_caption("САМОЛЕТИК")
-WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()
+screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # here's blits all elements of gameplay
+pygame.display.set_caption("САМОЛЕТИК")  # just title for app
+WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()  # const values WIDTH and HEIGHT of current window
 FPS = 60
 
-settings = json.load(open('data/settings.json', 'r'))
-if "total_score" not in settings:
+settings = json.load(open('data/settings.json', 'r'))  # data from settings.json here
+if "total_score" not in settings:  # rules if settings not exists
     settings["total_score"] = 0
 if "music" not in settings:
     settings["music"] = 1
+
 font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
-pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")
-if settings["music"]:
+pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")  # background music
+if settings["music"]:  # if music ON on start
     pygame.mixer.music.set_volume(.2)
     pygame.mixer.music.play(-1)
-fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')
-bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')
+else:  # if music OFF on start
+    pygame.mixer.music.set_volume(.2)
+    pygame.mixer.music.play(-1)
+    pygame.mixer.music.pause()
 
 
-class Sky(pygame.sprite.Sprite):
-    def __init__(self):
-        super().__init__()
-
-        self.name = 'sky'
-        self.image = pygame.image.load("data/pics/sky.png")
-        self.rect = pygame.Rect(0, 0, self.image.get_width(), self.image.get_height())
-
-
-class Ground(pygame.sprite.Sprite):
-    def __init__(self, sky_height):
-        super().__init__()
-
-        self.name = 'ground'
-        self.image = pygame.image.load("data/pics/ground.png")
-        self.rect = pygame.Rect(0, sky_height, self.image.get_width(), self.image.get_height())
-
-
-def camera_configure(camera, target_rect):
+def camera_configure(camera, target_rect):  # definition to calculate move of camera
     l, t, _, _ = target_rect
     _, _, w, h = camera
     l, t = -l + WIN_WIDTH / 2, -t + WIN_HEIGHT / 2
@@ -60,13 +47,18 @@ def camera_configure(camera, target_rect):
     return pygame.Rect(l, t, w, h)
 
 
-def clicked_start():
+def clicked_start():  # useless thing just for bug hunting
     print('Начинаем игру')
 
 
+def close_game():
+    pygame.display.quit()
+    pygame.quit()
+
+
 button_volume = ButtonIcon((WIN_WIDTH // 2, 0), "data/pics/volume_on.png",
-                           "data/pics/volume_off.png", 1)
-button_volume.rect[1] = WIN_HEIGHT - button_volume.rect[3]
+                           "data/pics/volume_off.png", 1)  # menu volume button
+button_volume.rect[1] = WIN_HEIGHT - button_volume.rect[3]  # replace to bottom of screen
 
 
 def sound_check():
@@ -76,49 +68,85 @@ def sound_check():
     else:
         pygame.mixer.music.pause()
         settings["music"] = 0
-    print(settings["music"], button_volume.status)
 
 
 button_volume.action = sound_check
+if not settings["music"]:
+    button_volume.cross_image()
 
 
-def preview():  # menu screen
+def menu():  # menu screen
+    button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
+                              (0, 255, 0), (0, 0, 255))  # add button
+    button_start.centerize()  # centralize text on button
+    button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ', 80, controls, (0, 255, 0),
+                                 (0, 0, 255))
+    button_controls.centerize()
+    button_exit = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4 * 3), ' ВЫХОД ', 80, close_game,
+                             (0, 255, 0), (0, 0, 255))  # add button
+    button_exit.centerize()
     running = True
-    button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' НАЧАТЬ ', 150, clicked_start,
-                              (0, 255, 0), (0, 0, 255))
-    button_start.centerize()
+    while running:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                return
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
+                if button_start.update(event):
+                    running = False
+                if button_exit.update(event):
+                    return
+                button_controls.update(event)
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                button_volume.update(event)
+        button_start.draw(screen)
+        button_controls.draw(screen)
+        button_exit.draw(screen)
+        button_volume.draw(screen)
+        pygame.display.flip()
+    game()
+    return
+
+
+def controls():  # controls screen
+    button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.5), ' НАЗАД ', 100, clicked_start,
+                             (255, 255, 0), (0, 0, 255))  # add button
+    button_prev.centerize()  # centralize text on button
     texts = ['В этой игре нужно управлять самолетом и уничтожать вражескую технику.',
              'Столкновение с землей и чужой техникой может привести к смерти.', '',
              'Управление:', 'ДВИЖЕНИЕ - Стрелки вверх/вниз или W/S,',
              'СТРЕЛЬБА - Пробел,', 'R - перезапуск, 1 - самоуничтожение']
+    running = True
     while running:
+        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
-                return
-            if (event.type == pygame.MOUSEBUTTONDOWN or
-                event.type == pygame.MOUSEMOTION) and button_start.update(event):
                 running = False
-            if event.type == pygame.MOUSEBUTTONDOWN:
-                button_volume.update(event)
-        screen.fill((0, 0, 0))
+                break
+            if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION) and button_prev.update(event):
+                running = False
         for text in texts:
             txt = font_for_text.render(text, False, (255, 255, 255))
             screen.blit(txt, ((WIN_WIDTH - txt.get_width()) // 2, txt.get_height() * texts.index(text) + 5))
-        button_start.draw(screen)
-        button_volume.draw(screen)
+        button_prev.draw(screen)
         pygame.display.flip()
-    main()
+    menu()
+    return
 
 
-def main():  # game cycle
+def game():  # game cycle
     balance = 0  # current score
     prev_balance = 0  # previous score for editing speed plane
-    sky = Sky()  # sky box
-    ground = Ground(sky.image.get_height())  # ground box
+
+    sky = Background("sky", "data/pics/sky.png")  # sky box
+    ground = Ground(sky.image.get_height(), "data/pics/ground.png")  # ground box
     plane = Plane((0, 1150), sky.rect.height)  # main character
+
+    fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')  # plane sound
+    bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')  # fire sound
+
     total_width = ground.image.get_width()  # get size of window
     total_height = ground.image.get_height() + sky.image.get_height()
-    print(total_height, total_width)
     camera = Camera(camera_configure, total_width, total_height)  # camera on main character
 
     entities = pygame.sprite.Group()
@@ -149,7 +177,7 @@ def main():  # game cycle
                 if event.key == pygame.K_r:  # restart button (R)
                     if balance > settings["total_score"]:
                         settings["total_score"] = balance
-                    main()
+                    game()
                     return
                 if event.key == pygame.K_1:  # suicide button (1)
                     plane.death()
@@ -187,7 +215,7 @@ def main():  # game cycle
                 elif e.name == 'ground':
                     plane.death()
             for b in bullets:
-                if b.is_collided_with(e) and e.name == 'tank' and not e.death:
+                if b.is_collided_with(e) and e.name == 'tank' and not e.death:  # kill tank by bullet
                     balance += 1
                     b.kill()
                     e.death = True
@@ -205,7 +233,10 @@ def main():  # game cycle
     if not plane.alive:
         fly_sound.stop()
     json.dump(settings, open('data/settings.json', 'w'))
+    pygame.mixer.stop()
+    menu()
+    return
 
 
 if __name__ == '__main__':
-    preview()  # preview screen(menu)
+    menu()  # preview screen, starts firstly for open menu screen
