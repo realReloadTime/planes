@@ -92,11 +92,10 @@ def menu():  # menu screen
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
-                if button_start.update(event):
+                if button_start.update(event) or button_exit.update(event):
                     running = False
-                if button_exit.update(event):
+                if button_controls.update(event):
                     return
-                button_controls.update(event)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button_volume.update(event)
         button_start.draw(screen)
