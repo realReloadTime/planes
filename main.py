@@ -6,6 +6,7 @@ from modules.tank import Tank
 from modules.bullet import Bullet
 from modules.buttons import ButtonText, ButtonIcon
 from modules.background import Background, Ground
+from modules.user_interface import Interface
 from random import randint
 
 pygame.init()  # always uses
@@ -25,7 +26,7 @@ if "music" not in settings:
 
 font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")  # background music
-if settings["music"]:  # if music ON on start
+if settings["music"]:  # if music ON at start
     pygame.mixer.music.set_volume(.2)
     pygame.mixer.music.play(-1)
 else:  # if music OFF on start
@@ -76,6 +77,7 @@ if not settings["music"]:
 
 
 def menu():  # menu screen
+    background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
                               (0, 255, 0), (0, 0, 255))  # add button
     button_start.centerize()  # centralize text on button
@@ -98,6 +100,7 @@ def menu():  # menu screen
                     return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button_volume.update(event)
+        screen.blit(background, (0, 0))
         button_start.draw(screen)
         button_controls.draw(screen)
         button_exit.draw(screen)
@@ -108,6 +111,7 @@ def menu():  # menu screen
 
 
 def controls():  # controls screen
+    background = pygame.image.load("data/pics/menu1.png")
     button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.5), ' НАЗАД ', 100, clicked_start,
                              (255, 255, 0), (0, 0, 255))  # add button
     button_prev.centerize()  # centralize text on button
@@ -124,6 +128,7 @@ def controls():  # controls screen
                 break
             if (event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION) and button_prev.update(event):
                 running = False
+        screen.blit(background, (0, 0))
         for text in texts:
             txt = font_for_text.render(text, False, (255, 255, 255))
             screen.blit(txt, ((WIN_WIDTH - txt.get_width()) // 2, txt.get_height() * texts.index(text) + 5))
@@ -134,12 +139,12 @@ def controls():  # controls screen
 
 
 def game():  # game cycle
-    balance = 0  # current score
     prev_balance = 0  # previous score for editing speed plane
 
     sky = Background("sky", "data/pics/sky.png")  # sky box
     ground = Ground(sky.image.get_height(), "data/pics/ground.png")  # ground box
     plane = Plane((0, 1150), sky.rect.height)  # main character
+    interface = Interface(WIN_WIDTH, WIN_HEIGHT, settings["total_score"])  # interface thing
 
     fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')  # plane sound
     bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')  # fire sound
@@ -163,26 +168,25 @@ def game():  # game cycle
     running = True
     fly_sound.play(-1)
     while running:
-        balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {balance}', False, (0, 0, 0))
-        total_text = font_for_text.render(f'РЕКОРД: {settings["total_score"]}', False, (150, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and
                                              event.key == pygame.K_ESCAPE):  # exit event
                 running = False
-                if balance > settings["total_score"]:
-                    settings["total_score"] = balance
+                if interface.current_score > settings["total_score"]:
+                    settings["total_score"] = interface.current_score
                 break
             elif event.type == pygame.KEYDOWN:  # button pressed
                 if event.key == pygame.K_r:  # restart button (R)
-                    if balance > settings["total_score"]:
-                        settings["total_score"] = balance
+                    if interface.current_score > settings["total_score"]:
+                        settings["total_score"] = interface.current_score
                     game()
                     return
                 if event.key == pygame.K_1:  # suicide button (1)
                     plane.death()
-                if event.key == pygame.K_SPACE and plane.alive:  # fire button (SPACE)
+                if event.key == pygame.K_SPACE and plane.alive and interface.can_fire():  # fire button (SPACE)
+                    interface.cooldown = 0
                     bul_sound.play()
-                    new_bullet = Bullet((plane.rect.x, plane.rect.y), plane.angle,
+                    new_bullet = Bullet((plane.rect.x, plane.rect.y), -plane.angle,
                                         20, total_width, total_height)  # create new button
                     entities.add(new_bullet)  # add to layout
                     bullets.add(new_bullet)  # add to group of buttons
@@ -208,27 +212,27 @@ def game():  # game cycle
                 e.update()
             if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground'):
                 if e.name == 'tank' and not e.death:
-                    balance += 1
+                    interface.plus_score()
                     plane.death()
                     e.death = True
                 elif e.name == 'ground':
                     plane.death()
             for b in bullets:
                 if b.is_collided_with(e) and e.name == 'tank' and not e.death:  # kill tank by bullet
-                    balance += 1
+                    interface.plus_score()
                     b.kill()
                     e.death = True
                     entities.add(Tank((randint(0, total_width - 200), randint(-200, 300)), ground))
                     break
             screen.blit(e.image, camera.apply(e))
-        screen.blit(balance_text, (WIN_WIDTH - balance_text.get_width() - 5, 5))
-        screen.blit(total_text, (WIN_WIDTH - total_text.get_width() - 5,
-                                 total_text.get_height() + balance_text.get_height()))
+        if not plane.alive:
+            interface.death()
+        interface.draw(screen)
         pygame.display.flip()
         timer.tick(FPS)
-        if balance % 5 == 0 and balance != 0 and prev_balance != balance:
+        if interface.current_score % 5 == 0 and interface.current_score != 0 and prev_balance != interface.current_score:
             plane.speed += .5
-        prev_balance = balance
+        prev_balance = interface.current_score
     if not plane.alive:
         fly_sound.stop()
     json.dump(settings, open('data/settings.json', 'w'))
