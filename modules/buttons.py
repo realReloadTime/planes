@@ -1,20 +1,33 @@
 import pygame
+pygame.font.init()
 
 
 class ButtonText(pygame.sprite.Sprite):
-    def __init__(self, coords, text, font_size, action, text_color=(0, 0, 0), backgr_color=(255, 255, 255)):
+    def __init__(self, coords, text, font_size, action, text_color=(0, 0, 0), background_color=None):
         super().__init__()
 
-        self.font = pygame.font.SysFont('Comic Sans MS', font_size)
-        self.action = action
-        self.text = self.font.render(text, False, text_color)
+        self.action = action  # action on click
+        self.text = text  # button text
         self.text_color = text_color
-        self.backgr = pygame.surface.Surface((self.text.get_width(), self.text.get_height()))
-        pygame.draw.rect(self.backgr, backgr_color, (0, 0, self.text.get_width(), self.text.get_height()))  # background
-        pygame.draw.rect(self.backgr, text_color, (0, 0, self.text.get_width(), self.text.get_height()), 2)  # frame
 
-        self.backgr.blit(self.text, (0, 0))
-        self.rect = [coords[0], coords[1], self.text.get_width(), self.text.get_height()]
+        self.font = pygame.font.SysFont('Comic Sans MS', font_size)  # font for text (object)
+        self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface on button
+        self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()))  # total surface
+        if background_color is None:  # erase background
+            self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()),
+                                                  pygame.SRCALPHA, 32)
+            self.surface.convert_alpha()
+            pygame.draw.rect(self.surface, (0, 0, 0),
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 1, 1)  # empty background
+        else:
+            self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()))
+            pygame.draw.rect(self.surface, background_color,
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()))  # background
+        pygame.draw.rect(self.surface, self.text_color,
+                         (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 2)  # frame
+
+        self.surface.blit(self.text_sur, (0, 0))
+        self.rect = [coords[0], coords[1], self.text_sur.get_width(), self.text_sur.get_height()]
 
     def update(self, event):
         mouse_pos = event.pos
@@ -23,17 +36,28 @@ class ButtonText(pygame.sprite.Sprite):
                 (self.rect[1] + self.rect[3])):
             self.action()
             return True
-        elif (self.rect[0] <= mouse_pos[0] <= (self.rect[0] + self.rect[2]) and self.rect[1] <= mouse_pos[1] <= (self.rect[
-            1] + self.rect[3])):
-            pygame.draw.rect(self.backgr, (255, 0, 0), (0, 0, self.text.get_width(), self.text.get_height()),
+        elif (self.rect[0] <= mouse_pos[0] <= (self.rect[0] + self.rect[2]) and
+              self.rect[1] <= mouse_pos[1] <= (self.rect[1] + self.rect[3])):
+            pygame.draw.rect(self.surface,
+                             (255 - self.text_color[0],
+                              255 - self.text_color[1],
+                              255 - self.text_color[2]), (0, 0, self.text_sur.get_width(), self.text_sur.get_height()),
                              2)  # frame red
+            self.text_sur = self.font.render(self.text, False,
+                                             (255 - self.text_color[0],
+                                              255 - self.text_color[1],
+                                              255 - self.text_color[2]))  # revert colors
+            self.surface.blit(self.text_sur, (0, 0))
         else:
-            pygame.draw.rect(self.backgr, self.text_color, (0, 0, self.text.get_width(), self.text.get_height()),
+            pygame.draw.rect(self.surface, self.text_color,
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()),
                              2)  # frame
+            self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface on button
+            self.surface.blit(self.text_sur, (0, 0))
         return False
 
     def draw(self, screen):
-        screen.blit(self.backgr, (self.rect[0], self.rect[1]))
+        screen.blit(self.surface, (self.rect[0], self.rect[1]))
 
     def centerize(self):
         self.rect[0] = self.rect[0] - self.rect[2] // 2

@@ -7,6 +7,7 @@ from modules.bullet import Bullet
 from modules.buttons import ButtonText, ButtonIcon
 from modules.background import Background, Ground
 from modules.user_interface import Interface
+from modules.input import InputText
 from random import randint
 
 pygame.init()  # always uses
@@ -79,14 +80,14 @@ if not settings["music"]:
 def menu():  # menu screen
     background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
-                              (0, 255, 0), (0, 0, 255))  # add button
+                              (0, 0, 255))  # add button
     button_start.centerize()  # centralize text on button
-    button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ', 80, controls, (0, 255, 0),
-                                 (0, 0, 255))
+    button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ', 80, controls, (0, 0, 255))
     button_controls.centerize()
     button_exit = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4 * 3), ' ВЫХОД ', 80, close_game,
-                             (0, 255, 0), (0, 0, 255))  # add button
+                             (0, 0, 255))  # add button
     button_exit.centerize()
+
     running = True
     while running:
         screen.fill((0, 0, 0))
@@ -113,7 +114,7 @@ def menu():  # menu screen
 def controls():  # controls screen
     background = pygame.image.load("data/pics/menu1.png")
     button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.5), ' НАЗАД ', 100, clicked_start,
-                             (255, 255, 0), (0, 0, 255))  # add button
+                             (0, 0, 255))  # add button
     button_prev.centerize()  # centralize text on button
     texts = ['В этой игре нужно управлять самолетом и уничтожать вражескую технику.',
              'Столкновение с землей и чужой техникой может привести к смерти.', '',
@@ -230,8 +231,10 @@ def game():  # game cycle
         interface.draw(screen)
         pygame.display.flip()
         timer.tick(FPS)
-        if interface.current_score % 5 == 0 and interface.current_score != 0 and prev_balance != interface.current_score:
-            plane.speed += .5
+        if (interface.current_score % 5 == 0 and
+                interface.current_score != 0 and
+                prev_balance != interface.current_score):
+            plane.speed += 1
         prev_balance = interface.current_score
     if not plane.alive:
         fly_sound.stop()
