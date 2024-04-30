@@ -22,9 +22,9 @@ class ButtonText(pygame.sprite.Sprite):
         else:
             self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()))
             pygame.draw.rect(self.surface, background_color,
-                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()))  # background
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), border_radius=30)  # background
         pygame.draw.rect(self.surface, self.text_color,
-                         (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 2)  # frame
+                         (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 2, 30)  # frame
 
         self.surface.blit(self.text_sur, (0, 0))
         self.rect = [coords[0], coords[1], self.text_sur.get_width(), self.text_sur.get_height()]
@@ -42,7 +42,7 @@ class ButtonText(pygame.sprite.Sprite):
                              (255 - self.text_color[0],
                               255 - self.text_color[1],
                               255 - self.text_color[2]), (0, 0, self.text_sur.get_width(), self.text_sur.get_height()),
-                             2)  # frame red
+                             2, 30)  # frame red
             self.text_sur = self.font.render(self.text, False,
                                              (255 - self.text_color[0],
                                               255 - self.text_color[1],
@@ -51,7 +51,7 @@ class ButtonText(pygame.sprite.Sprite):
         else:
             pygame.draw.rect(self.surface, self.text_color,
                              (0, 0, self.text_sur.get_width(), self.text_sur.get_height()),
-                             2)  # frame
+                             2, 30)  # frame
             self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface on button
             self.surface.blit(self.text_sur, (0, 0))
         return False

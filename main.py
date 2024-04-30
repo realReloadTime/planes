@@ -54,6 +54,8 @@ def clicked_start():  # useless thing just for bug hunting
 
 
 def close_game():
+    settings["total_score"] = 0
+    json.dump(settings, open('data/settings.json', 'w'))
     pygame.display.quit()
     pygame.quit()
 
@@ -72,8 +74,17 @@ def sound_check():
         settings["music"] = 0
 
 
-def enter_name():
-    print('OK')
+def enter_name(inp=''):  # profile input function
+    if not inp:
+        print('OK')
+    else:
+        if inp not in settings['records']:
+            settings['records'][inp] = settings['total_score']
+        else:
+            if settings['records'][inp] < settings['total_score']:
+                settings['records'][inp] = settings['total_score']
+            else:
+                settings['total_score'] = settings['records'][inp]
 
 
 button_volume.action = sound_check
@@ -84,7 +95,7 @@ if not settings["music"]:
 def menu():  # menu screen
     background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
-                              (0, 0, 255))  # add button НАЧАТЬ
+                              (0, 0, 255), (255, 0, 0))  # add button НАЧАТЬ
     button_start.centerize()  # centralize text on button
     button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ',
                                  80, controls, (0, 0, 255))  # add button УПРАВЛЕНИЕ
@@ -110,7 +121,8 @@ def menu():  # menu screen
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
-                button_entname.update(event)
+                if button_entname.update(event):
+                    enter_name(input_name.text)
                 if button_start.update(
                         event):  # starts game (in next IF updates buttons and starts theirs event functions)
                     running = False
@@ -162,7 +174,7 @@ def controls():  # controls screen
 
 def records():
     background = pygame.image.load("data/pics/menu2.png")
-    button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.5), ' НАЗАД ', 100, clicked_start,
+    button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.1), ' НАЗАД ', 100, clicked_start,
                              (0, 0, 255))  # add button
     button_prev.centerize()  # centralize text on button
     running = True
