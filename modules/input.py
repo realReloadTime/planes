@@ -1,4 +1,5 @@
 import pygame
+
 pygame.font.init()
 
 
@@ -9,50 +10,57 @@ class InputText:
 
         self.font = pygame.font.SysFont('Comic Sans MS', font_size)
         self.text_sur = self.font.render(self.text, False, (0, 0, 0))
-        self.surface = pygame.surface.Surface((300, 100))
-        self.surface.set_colorkey(pygame.Color((255, 255, 255)))
-        # self.surface.convert_alpha()
-        pygame.draw.rect(self.surface, (255, 255, 255),
-                         (0, 0, self.text_sur.get_width(), self.text_sur.get_height()))
+        self.surface = pygame.surface.Surface((300, 50))
+
         self.active = False
-        self.rect = self.surface.get_rect()
-        print(self.rect)
+        self.rect = pygame.rect.Rect(coords[0], coords[1], self.surface.get_width(), self.surface.get_height())
 
     def draw(self, screen):
+        size_w = max(300, self.text_sur.get_width())
+        self.surface = pygame.surface.Surface((size_w, self.rect.height))
         pygame.draw.rect(self.surface, (255, 255, 255),
-                         (0, 0, self.text_sur.get_width(), self.text_sur.get_height()))
+                         (0, 0, size_w, self.surface.get_height()), self.rect.height)
+        if self.active:
+            pygame.draw.rect(self.surface, (200, 0, 0), (0, 0, size_w, self.surface.get_height()), 2)
+        else:
+            pygame.draw.rect(self.surface, (0, 0, 0), (0, 0, size_w, self.surface.get_height()), 2)
         self.surface.blit(self.text_sur, (0, 0))
-        screen.blit(self.surface, self.coords)
+        screen.blit(self.surface, (self.rect.left, self.rect.top))
 
     def update(self, event):
-        if event.type == pygame.MOUSEBUTTONDOWN and self.rect.collidepoint(event.pos):
+        if (event.type == pygame.MOUSEBUTTONDOWN and (self.rect[0] <= event.pos[0] <= self.rect[0] + self.rect[2]) and
+                (self.rect[1] <= event.pos[1] <= (self.rect[1] + self.rect[3]))):   # set active field (can enter)
             self.active = True
-            print("WOW")
-        elif event.type == pygame.MOUSEBUTTONDOWN:
+        elif event.type == pygame.MOUSEBUTTONDOWN:  # set NOT active field
             self.active = False
-            print("FOP " + str(event.pos))
 
-        if self.active and event.type == pygame.KEYDOWN:
-            if self.text[-1] == '|':
-                self.text = self.text[:-1]
-            self.text += event.text
-
-        if self.active and self.text[-1] != '|':
+        if self.active:  # field activated and ...
+            if '|' in self.text:
+                self.text = ''.join(self.text.split('|'))
+            if event.type == pygame.KEYDOWN:
+                if (event.key != pygame.K_BACKSPACE and len(pygame.key.name(event.key)) == 1 and
+                        pygame.key.get_mods() & pygame.KMOD_SHIFT):  # capitalizes letter if pressed SHIFT
+                    self.text += pygame.key.name(event.key).capitalize()
+                elif event.key != pygame.K_BACKSPACE and len(pygame.key.name(event.key)) == 1:  # pressed text button
+                    self.text += pygame.key.name(event.key)
+                elif event.key == pygame.K_BACKSPACE and len(self.text) > 1:  # pressed backspace
+                    self.text = self.text[:-1]
+                elif event.key == pygame.K_BACKSPACE and len(self.text) == 1:  # pressed backspace and text 'll be empty
+                    self.text = ''
             self.text += '|'
-        elif self.active and self.text[-1] == '|':
-            self.text = self.text[:-1]
+        else:
+            if '|' in self.text:
+                self.text = ''.join(self.text.split('|'))
+        self.text_sur = self.font.render(self.text, False, (0, 0, 0))
 
-        if self.active:
-            self.text_sur = self.font.render(self.text, False, (0, 0, 0))
 
-
-def test():
+def test():  # testing function (not uses in MAIN run)
     clock = pygame.time.Clock()
     screen = pygame.display.set_mode()
-    input_box = InputText((100, 500), text="Pffwf")
+    input_box = InputText((100, 500), text="ABoBa")
     running = True
     while running:
-        screen.fill((255, 255, 255))
+        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             input_box.update(event)
             if event.type == pygame.QUIT:

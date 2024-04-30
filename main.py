@@ -72,6 +72,10 @@ def sound_check():
         settings["music"] = 0
 
 
+def enter_name():
+    print('OK')
+
+
 button_volume.action = sound_check
 if not settings["music"]:
     button_volume.cross_image()
@@ -80,32 +84,49 @@ if not settings["music"]:
 def menu():  # menu screen
     background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
-                              (0, 0, 255))  # add button
+                              (0, 0, 255))  # add button НАЧАТЬ
     button_start.centerize()  # centralize text on button
-    button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ', 80, controls, (0, 0, 255))
+    button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ',
+                                 80, controls, (0, 0, 255))  # add button УПРАВЛЕНИЕ
     button_controls.centerize()
     button_exit = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4 * 3), ' ВЫХОД ', 80, close_game,
-                             (0, 0, 255))  # add button
+                             (0, 0, 255))  # add button ВЫХОД
     button_exit.centerize()
+    button_records = ButtonText((150, 200), ' РЕКОРДЫ ', 50, records,
+                                (0, 0, 255))  # add button РЕКОРДЫ
+    button_records.centerize()  # centralize text on button
 
+    input_name = InputText((10, button_records.rect[0] + 500))
+
+    button_entname = ButtonText((230, input_name.rect.top + 95),
+                                ' ВПИСАТЬ СЕБЯ В ИСТОРИЮ ', 30, enter_name,
+                                (0, 0, 255))  # add button ВПИСАТЬ СЕБЯ В ИСТОРИЮ
+    button_entname.centerize()  # centralize text on button
     running = True
     while running:
         screen.fill((0, 0, 0))
         for event in pygame.event.get():
+            input_name.update(event)
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
-                if button_start.update(event) or button_exit.update(event):
+                button_entname.update(event)
+                if button_start.update(
+                        event):  # starts game (in next IF updates buttons and starts theirs event functions)
                     running = False
-                if button_controls.update(event):
+                elif (button_exit.update(event) or button_controls.update(event) or
+                      button_records.update(event)):
                     return
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button_volume.update(event)
         screen.blit(background, (0, 0))
         button_start.draw(screen)
         button_controls.draw(screen)
+        button_records.draw(screen)
+        button_entname.draw(screen)
         button_exit.draw(screen)
         button_volume.draw(screen)
+        input_name.draw(screen)
         pygame.display.flip()
     game()
     return
@@ -137,6 +158,26 @@ def controls():  # controls screen
         pygame.display.flip()
     menu()
     return
+
+
+def records():
+    background = pygame.image.load("data/pics/menu2.png")
+    button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.5), ' НАЗАД ', 100, clicked_start,
+                             (0, 0, 255))  # add button
+    button_prev.centerize()  # centralize text on button
+    running = True
+    while running:
+        screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
+                running = False
+            if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
+                if button_prev.update(event):
+                    running = False
+        screen.blit(background, (0, 0))
+        button_prev.draw(screen)
+        pygame.display.flip()
+    menu()
 
 
 def game():  # game cycle
