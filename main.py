@@ -4,7 +4,7 @@ from modules.plane import Plane
 from modules.camera import Camera
 from modules.tank import Tank
 from modules.bullet import Bullet
-from modules.buttons import ButtonText, ButtonIcon
+from modules.buttons import ButtonText, ButtonIcon, Label
 from modules.background import Background, Ground
 from modules.user_interface import Interface
 from modules.input import InputText
@@ -17,6 +17,7 @@ pygame.font.init()  # ||-||-||
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # here's blits all elements of gameplay
 pygame.display.set_caption("САМОЛЕТИК")  # just title for app
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()  # const values WIDTH and HEIGHT of current window
+print(WIN_WIDTH, WIN_HEIGHT)
 FPS = 60
 
 settings = json.load(open('data/settings.json', 'r'))  # data from settings.json here
@@ -24,6 +25,9 @@ if "total_score" not in settings:  # rules if settings not exists
     settings["total_score"] = 0
 if "music" not in settings:
     settings["music"] = 1
+if "records" not in settings:
+    settings["records"] = dict()
+settings["current_profile"] = False
 
 font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")  # background music
@@ -75,16 +79,21 @@ def sound_check():
 
 
 def enter_name(inp=''):  # profile input function
-    if not inp:
-        print('OK')
-    else:
+    if not inp:  # empty input
+        pass
+    else:  # input(profile name) isn't empty
         if inp not in settings['records']:
-            settings['records'][inp] = settings['total_score']
-        else:
-            if settings['records'][inp] < settings['total_score']:
+            if not settings['current_profile']:
                 settings['records'][inp] = settings['total_score']
             else:
+                settings['total_score'] = 0
+                settings['records'][inp] = settings['total_score']
+        elif inp in settings['records']:
+            if settings['current_profile'] == inp:
+                settings['records'][inp] = max(settings['records'][inp], settings['total_score'])
+            else:
                 settings['total_score'] = settings['records'][inp]
+        settings['current_profile'] = inp
 
 
 button_volume.action = sound_check
@@ -92,27 +101,67 @@ if not settings["music"]:
     button_volume.cross_image()
 
 
+def preview(is_active=None, coords_author=None):
+    if not(is_active and coords_author):
+        return
+    panel = pygame.image.load("data/pics/author1.png")
+    panel.convert_alpha()
+    # panel = pygame.transform.scale(panel, (WIN_WIDTH, WIN_HEIGHT))
+    coords = [1920, 100]
+    clock = pygame.time.Clock()
+    fanfars = pygame.mixer.Sound('data/audis/fanfar.wav')
+    fanfars.play()
+    running = True
+    while running:
+        # screen.fill((0, 0, 0))
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
+                fanfars.stop()
+                return
+            if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE) or event.type == pygame.MOUSEBUTTONDOWN:
+                fanfars.stop()
+                running = False
+        coords[0] -= 10
+        screen.blit(panel, coords)
+        clock.tick(20)
+        pygame.display.flip()
+        if coords[0] == 0:
+            coords[0] += 10
+    # menu()
+
+
 def menu():  # menu screen
     background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
-                              (0, 0, 255), (255, 0, 0))  # add button НАЧАТЬ
+                              (0, 0, 0), (0, 0, 255))  # add button НАЧАТЬ
     button_start.centerize()  # centralize text on button
     button_controls = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 2), ' УПРАВЛЕНИЕ ',
-                                 80, controls, (0, 0, 255))  # add button УПРАВЛЕНИЕ
+                                 80, controls, (0, 0, 0), (0, 0, 255))  # add button УПРАВЛЕНИЕ
     button_controls.centerize()
     button_exit = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4 * 3), ' ВЫХОД ', 80, close_game,
-                             (0, 0, 255))  # add button ВЫХОД
+                             (0, 0, 0), (0, 0, 255))  # add button ВЫХОД
     button_exit.centerize()
     button_records = ButtonText((150, 200), ' РЕКОРДЫ ', 50, records,
-                                (0, 0, 255))  # add button РЕКОРДЫ
+                                (0, 0, 0), (0, 0, 255))  # add button РЕКОРДЫ
     button_records.centerize()  # centralize text on button
 
     input_name = InputText((10, button_records.rect[0] + 500))
 
     button_entname = ButtonText((230, input_name.rect.top + 95),
                                 ' ВПИСАТЬ СЕБЯ В ИСТОРИЮ ', 30, enter_name,
-                                (0, 0, 255))  # add button ВПИСАТЬ СЕБЯ В ИСТОРИЮ
+                                (0, 0, 0), (0, 0, 255))  # add button ВПИСАТЬ СЕБЯ В ИСТОРИЮ
     button_entname.centerize()  # centralize text on button
+
+    button_author = ButtonText((WIN_WIDTH - 300, 100),
+                                ' АВТОРЫ ', 30, preview,
+                                (0, 0, 0), (0, 0, 255))
+    button_author.rect[0] = WIN_WIDTH - button_author.rect[2]
+    button_author.rect[1] = WIN_HEIGHT - button_author.rect[3]
+
+    profile_rec = Label((0, 0), f"Ваш рекорд: {settings['total_score']}")
+    profile_rec.rightize(WIN_WIDTH, WIN_HEIGHT)
+    if settings["current_profile"]:
+        profile_rec.edit_text(f"{settings['current_profile']}, Ваш рекорд: {settings['total_score']}")
     running = True
     while running:
         screen.fill((0, 0, 0))
@@ -121,8 +170,10 @@ def menu():  # menu screen
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
+                button_author.update(event)
                 if button_entname.update(event):
                     enter_name(input_name.text)
+                    profile_rec.edit_text(f"{settings['current_profile']}, Ваш рекорд: {settings['total_score']}")
                 if button_start.update(
                         event):  # starts game (in next IF updates buttons and starts theirs event functions)
                     running = False
@@ -138,7 +189,9 @@ def menu():  # menu screen
         button_entname.draw(screen)
         button_exit.draw(screen)
         button_volume.draw(screen)
+        button_author.draw(screen)
         input_name.draw(screen)
+        profile_rec.draw(screen)
         pygame.display.flip()
     game()
     return
@@ -188,6 +241,11 @@ def records():
                     running = False
         screen.blit(background, (0, 0))
         button_prev.draw(screen)
+        for i in range(len(settings["records"])):
+            key = list(settings["records"].keys())[i]
+            new_l = Label((0, (50 * i + 10)), f'{key} - {settings["records"][key]}', (255, 255, 0))
+            new_l.centerize(WIN_WIDTH, WIN_HEIGHT)
+            new_l.draw(screen)
         pygame.display.flip()
     menu()
 
@@ -228,6 +286,7 @@ def game():  # game cycle
                 running = False
                 if interface.current_score > settings["total_score"]:
                     settings["total_score"] = interface.current_score
+                    enter_name(settings["current_profile"])
                 break
             elif event.type == pygame.KEYDOWN:  # button pressed
                 if event.key == pygame.K_r:  # restart button (R)
@@ -280,6 +339,7 @@ def game():  # game cycle
                     break
             screen.blit(e.image, camera.apply(e))
         if not plane.alive:
+            fly_sound.stop()
             interface.death()
         interface.draw(screen)
         pygame.display.flip()
@@ -289,8 +349,6 @@ def game():  # game cycle
                 prev_balance != interface.current_score):
             plane.speed += 1
         prev_balance = interface.current_score
-    if not plane.alive:
-        fly_sound.stop()
     json.dump(settings, open('data/settings.json', 'w'))
     pygame.mixer.stop()
     menu()

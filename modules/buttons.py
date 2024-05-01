@@ -1,4 +1,5 @@
 import pygame
+
 pygame.font.init()
 
 
@@ -12,17 +13,16 @@ class ButtonText(pygame.sprite.Sprite):
 
         self.font = pygame.font.SysFont('Comic Sans MS', font_size)  # font for text (object)
         self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface on button
-        self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()))  # total surface
+        self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()),
+                                              pygame.SRCALPHA, 32)  # total surface
+        self.surface.convert_alpha()
         if background_color is None:  # erase background
-            self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()),
-                                                  pygame.SRCALPHA, 32)
-            self.surface.convert_alpha()
             pygame.draw.rect(self.surface, (0, 0, 0),
-                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 1, 1)  # empty background
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 1, 30)  # empty background
         else:
-            self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()))
             pygame.draw.rect(self.surface, background_color,
-                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), border_radius=30)  # background
+                             (0, 0, self.text_sur.get_width(), self.text_sur.get_height()),
+                             border_radius=30)  # background
         pygame.draw.rect(self.surface, self.text_color,
                          (0, 0, self.text_sur.get_width(), self.text_sur.get_height()), 2, 30)  # frame
 
@@ -95,3 +95,66 @@ class ButtonIcon(pygame.sprite.Sprite):
             self.image = pygame.image.load(self.pics[1])
         self.image.set_colorkey((255, 255, 255))
         self.rect = [self.rect[0], self.rect[1], self.image.get_width(), self.image.get_height()]
+
+
+class Label:
+    def __init__(self, coords, text, text_color=(0, 0, 0), font_size=32):
+        self.text = text  # text
+        self.text_color = text_color
+        self.coords = list(coords)  # surface coords
+
+        self.font = pygame.font.SysFont('Comic Sans MS', font_size)  # font for text (object)
+        self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface
+
+        self.width, self.height = self.text_sur.get_width(), self.text_sur.get_height()
+        self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()),
+                                              pygame.SRCALPHA, 32)  # total surface
+        self.surface.convert_alpha()
+
+    def draw(self, screen):  # draw label on screen
+        self.surface.blit(self.text_sur, (0, 0))
+        screen.blit(self.surface, self.coords)
+
+    def edit_text(self, text):  # function for optimize editing text on label
+        self.text = text
+        self.text_sur = self.font.render(self.text, False, self.text_color)  # text surface
+        self.coords = [self.coords[0] - (self.text_sur.get_width() - self.width),
+                       self.coords[1] - (self.text_sur.get_height() - self.height)]
+        self.width, self.height = self.text_sur.get_width(), self.text_sur.get_height()
+        self.surface = pygame.surface.Surface((self.text_sur.get_width(), self.text_sur.get_height()),
+                                              pygame.SRCALPHA, 32)  # total surface
+        self.surface.convert_alpha()
+
+    def centerize(self, window_width, window_height, vertical=False):  # centerizes label on screen
+        if vertical:
+            self.coords[1] = window_height / 2 - self.height / 2
+        else:
+            self.coords[0] = window_width / 2 - self.width / 2
+
+    def rightize(self, window_width,
+                 window_height=None):  # rightizes label on screen (if window_height != None moves to label UP too)
+        self.coords[0] = window_width - self.width - 10
+        if window_height:
+            self.coords[1] = self.height
+        print(self.coords)
+
+
+# https://stackoverflow.com/questions/54363047/how-to-draw-outline-on-the-fontpygame (function down)
+
+
+def add_outline_to_image(image: pygame.Surface, thickness: int, color: tuple,
+                         color_key: tuple = (255, 0, 255)) -> pygame.Surface:
+    mask = pygame.mask.from_surface(image)
+    mask_surf = mask.to_surface(setcolor=color)
+    mask_surf.set_colorkey((0, 0, 0))
+
+    new_img = pygame.Surface((image.get_width() + 2, image.get_height() + 2))
+    new_img.fill(color_key)
+    new_img.set_colorkey(color_key)
+
+    for i in -thickness, thickness:
+        new_img.blit(mask_surf, (i + thickness, thickness))
+        new_img.blit(mask_surf, (thickness, i + thickness))
+    new_img.blit(image, (thickness, thickness))
+
+    return new_img
