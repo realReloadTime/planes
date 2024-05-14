@@ -136,7 +136,6 @@ class Label:
         self.coords[0] = window_width - self.width - 10
         if window_height:
             self.coords[1] = self.height
-        print(self.coords)
 
 
 # https://stackoverflow.com/questions/54363047/how-to-draw-outline-on-the-fontpygame (function down)

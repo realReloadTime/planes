@@ -16,15 +16,20 @@ class Plane(pygame.sprite.Sprite):  # REWRITE ROTATE MOVE
         self.rect = pygame.Rect(coords[0], coords[1], self.image.get_width(), self.image.get_height())
         self.angle = 0
         self.alive = True
-        self.speed = 6
+        self.speed = 8
 
     def update(self):
+        print(self.rect.x, self.rect.y)
         if self.alive:
             self.rect.x += cos(radians(self.angle)) * self.speed
             self.rect.y -= sin(radians(self.angle)) * self.speed
         else:
-            if self.rect.y < self.sky_height:
+            if self.rect.y < self.sky_height - 30:
                 self.rect.y += 4
+            else:
+                self.image = pygame.image.load("data/pics/explosion.png")
+                self.image.set_colorkey((255, 255, 255))
+                self.rect = pygame.Rect(self.rect.x, self.rect.y, self.image.get_width(), self.image.get_height())
 
     def clicked_button(self, key):
         if self.alive:

@@ -17,17 +17,16 @@ pygame.font.init()  # ||-||-||
 screen = pygame.display.set_mode((0, 0), pygame.FULLSCREEN)  # here's blits all elements of gameplay
 pygame.display.set_caption("САМОЛЕТИК")  # just title for app
 WIN_WIDTH, WIN_HEIGHT = pygame.display.get_window_size()  # const values WIDTH and HEIGHT of current window
-print(WIN_WIDTH, WIN_HEIGHT)
 FPS = 60
 
 settings = json.load(open('data/settings.json', 'r'))  # data from settings.json here
-if "total_score" not in settings:  # rules if settings not exists
-    settings["total_score"] = 0
-if "music" not in settings:
+if "music" not in settings:  # rules for settings.json
     settings["music"] = 1
 if "records" not in settings:
     settings["records"] = dict()
 settings["current_profile"] = False
+settings["level"] = 0
+settings["total_score"] = 0
 
 font_for_text = pygame.font.SysFont('Comic Sans MS', 30)
 pygame.mixer.music.load("data/audis/alexander-nakarada-near-end-action.mp3")  # background music
@@ -39,11 +38,13 @@ else:  # if music OFF on start
     pygame.mixer.music.play(-1)
     pygame.mixer.music.pause()
 
+authors_flag = False
+
 
 def camera_configure(camera, target_rect):  # definition to calculate move of camera
     l, t, _, _ = target_rect
     _, _, w, h = camera
-    l, t = -l + WIN_WIDTH / 2, -t + WIN_HEIGHT / 2
+    l, t = -l + WIN_WIDTH / 2 - 250, -t + WIN_HEIGHT / 2
 
     l = min(0, l)  # Не движемся дальше левой границы
     l = max(-(camera.width - WIN_WIDTH), l)  # Не движемся дальше правой границы
@@ -54,7 +55,7 @@ def camera_configure(camera, target_rect):  # definition to calculate move of ca
 
 
 def clicked_start():  # useless thing just for bug hunting
-    print('Начинаем игру')
+    pass
 
 
 def close_game():
@@ -102,7 +103,7 @@ if not settings["music"]:
 
 
 def preview(is_active=None, coords_author=None):
-    if not(is_active and coords_author):
+    if not (is_active and coords_author):
         return
     panel = pygame.image.load("data/pics/author1.png")
     panel.convert_alpha()
@@ -130,6 +131,16 @@ def preview(is_active=None, coords_author=None):
     # menu()
 
 
+def authors(scrn=None, coords=None):
+    pass
+
+
+def change_level():
+    settings["level"] += 1
+    settings["level"] %= 3
+    return True
+
+
 def menu():  # menu screen
     background = pygame.image.load("data/pics/menu1.png")
     button_start = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 4), ' НАЧАТЬ ', 150, clicked_start,
@@ -153,8 +164,8 @@ def menu():  # menu screen
     button_entname.centerize()  # centralize text on button
 
     button_author = ButtonText((WIN_WIDTH - 300, 100),
-                                ' АВТОРЫ ', 30, preview,
-                                (0, 0, 0), (0, 0, 255))
+                               ' АВТОРЫ ', 30, authors,
+                               (0, 0, 0), (0, 0, 255))
     button_author.rect[0] = WIN_WIDTH - button_author.rect[2]
     button_author.rect[1] = WIN_HEIGHT - button_author.rect[3]
 
@@ -162,6 +173,10 @@ def menu():  # menu screen
     profile_rec.rightize(WIN_WIDTH, WIN_HEIGHT)
     if settings["current_profile"]:
         profile_rec.edit_text(f"{settings['current_profile']}, Ваш рекорд: {settings['total_score']}")
+    button_level = ButtonText((0, 0), f" Текущий уровень: {settings['level']} ",
+                              28, change_level, background_color=(150, 0, 0))
+    button_level.rect[0] = WIN_WIDTH - button_level.rect[2]
+    button_level.rect[1] = profile_rec.coords[1] + button_level.rect[3] + 10
     running = True
     while running:
         screen.fill((0, 0, 0))
@@ -171,6 +186,11 @@ def menu():  # menu screen
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
                 button_author.update(event)
+                if button_level.update(event):
+                    button_level = ButtonText((0, 0), f" Текущий уровень: {settings['level']} ",
+                                              28, change_level, background_color=(150, 0, 0))
+                    button_level.rect[0] = WIN_WIDTH - button_level.rect[2]
+                    button_level.rect[1] = profile_rec.coords[1] + button_level.rect[3] + 10
                 if button_entname.update(event):
                     enter_name(input_name.text)
                     profile_rec.edit_text(f"{settings['current_profile']}, Ваш рекорд: {settings['total_score']}")
@@ -183,6 +203,7 @@ def menu():  # menu screen
             if event.type == pygame.MOUSEBUTTONDOWN:
                 button_volume.update(event)
         screen.blit(background, (0, 0))
+
         button_start.draw(screen)
         button_controls.draw(screen)
         button_records.draw(screen)
@@ -190,8 +211,10 @@ def menu():  # menu screen
         button_exit.draw(screen)
         button_volume.draw(screen)
         button_author.draw(screen)
+        button_level.draw(screen)
         input_name.draw(screen)
         profile_rec.draw(screen)
+
         pygame.display.flip()
     game()
     return
@@ -253,8 +276,9 @@ def records():
 def game():  # game cycle
     prev_balance = 0  # previous score for editing speed plane
 
-    sky = Background("sky", "data/pics/sky.png")  # sky box
-    ground = Ground(sky.image.get_height(), "data/pics/ground.png")  # ground box
+    sky = Background("sky", f"data/pics/sky{settings['level']}.png")  # sky box
+    ground = Ground(sky.image.get_height(), f"data/pics/ground{settings['level']}.png")  # ground box
+
     plane = Plane((0, 1150), sky.rect.height)  # main character
     interface = Interface(WIN_WIDTH, WIN_HEIGHT, settings["total_score"])  # interface thing
 
@@ -356,4 +380,4 @@ def game():  # game cycle
 
 
 if __name__ == '__main__':
-    menu()  # preview screen, starts firstly for open menu screen
+    menu()

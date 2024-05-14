@@ -24,20 +24,17 @@ class Interface(pygame.sprite.Sprite):
         self.surf.convert_alpha()
         if self.health == 0:
             self.death()
-        if self.alive:
-            balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {self.current_score}', False, (255, 0, 0))
-            total_text = font_for_text.render(f'РЕКОРД: {self.total_score}', False, (255, 0, 0))
-            screen.blit(balance_text, (self.window_size[0] - balance_text.get_width() - 5, 5))
-            screen.blit(total_text, (self.window_size[0] - total_text.get_width() - 5,
-                                     total_text.get_height() + balance_text.get_rect().x))
-            self.cooldown %= 101
-            if self.cooldown < 100:
-                self.cooldown += 1
-            pygame.draw.rect(self.surf, (255, 0, 0), (0, 5, self.health * 3, 30))
-            pygame.draw.rect(self.surf, (0, 0, 255),
+        balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {self.current_score}', False, (255, 0, 0))
+        total_text = font_for_text.render(f'РЕКОРД: {self.total_score}', False, (255, 0, 0))
+        screen.blit(balance_text, (self.window_size[0] - balance_text.get_width() - 5, 5))
+        screen.blit(total_text, (self.window_size[0] - total_text.get_width() - 5,
+                                 total_text.get_height() + balance_text.get_rect().x))
+        self.cooldown %= 101
+        if self.cooldown < 100:
+            self.cooldown += 1
+        pygame.draw.rect(self.surf, (255, 0, 0), (0, 5, self.health * 3, 30))
+        pygame.draw.rect(self.surf, (0, 0, 255),
                              (0, total_text.get_height() + balance_text.get_rect().x, self.cooldown * 3, 30))
-        else:
-            pass
         screen.blit(self.surf, (0, 0))
 
     def plus_score(self):
