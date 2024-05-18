@@ -19,6 +19,12 @@ class Interface(pygame.sprite.Sprite):
         self.total_score = total_score
         self.alive = True
 
+        self.timeb = False
+        self.bullb = False
+
+        self.busters = [pygame.transform.scale(pygame.image.load('data/pics/timeshift.png'), (45, 45)),
+                        pygame.transform.scale(pygame.image.load('data/pics/bullinfinity.png'), (45, 45))]
+
     def draw(self, screen):
         self.surf = pygame.surface.Surface(self.window_size, pygame.SRCALPHA, 32)
         self.surf.convert_alpha()
@@ -35,6 +41,11 @@ class Interface(pygame.sprite.Sprite):
         pygame.draw.rect(self.surf, (255, 0, 0), (0, 5, self.health * 3, 30))
         pygame.draw.rect(self.surf, (0, 0, 255),
                              (0, total_text.get_height() + balance_text.get_rect().x, self.cooldown * 3, 30))
+
+        if self.timeb:
+            self.surf.blit(self.busters[0], (0, total_text.get_height() + balance_text.get_rect().x + 30))
+        if self.bullb:
+            self.surf.blit(self.busters[1], (50, total_text.get_height() + balance_text.get_rect().x + 30))
         screen.blit(self.surf, (0, 0))
 
     def plus_score(self):

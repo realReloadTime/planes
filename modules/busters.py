@@ -19,8 +19,9 @@ class TimeShift(pygame.sprite.Sprite):
     def draw(self, screen):
         screen.blit(self.image, self.coords)
 
-    def collided(self, plane):
+    def collided(self, plane, interface):
         if plane.is_collided_with(self):
+            interface.timeb = True
             if self.ondoing_counter == 0:
                 self.oldspeed = plane.speed
                 self.ondoing_counter = 300
@@ -30,6 +31,7 @@ class TimeShift(pygame.sprite.Sprite):
             self.ondoing_counter -= 1
         elif self.ondoing_counter == 1:
             plane.speed = self.oldspeed
+            interface.timeb = False
             self.ondoing_counter = 0
             self.rect.x = randint(100, 5200)
             self.rect.y = randint(400, 1500)
@@ -53,6 +55,7 @@ class BulletInfinity(pygame.sprite.Sprite):
 
     def collided(self, plane, interface):
         if plane.is_collided_with(self):
+            interface.bullb = True
             if self.ondoing_counter == 0:
                 self.ondoing_counter = 300
                 self.image = pygame.transform.scale(self.image, (0, 0))
@@ -61,6 +64,7 @@ class BulletInfinity(pygame.sprite.Sprite):
             self.ondoing_counter -= 1
         elif self.ondoing_counter == 1:
             self.ondoing_counter = 0
+            interface.bullb = False
             self.rect.x = randint(100, 5200)
             self.rect.y = randint(400, 1500)
-            self.image = pygame.image.load('data/pics/timeshift.png')
+            self.image = pygame.image.load('data/pics/bullinfinity.png')

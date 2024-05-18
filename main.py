@@ -103,19 +103,20 @@ if not settings["music"]:
     button_volume.cross_image()
 
 
-def preview(is_active=None, coords_author=None):
-    if not (is_active and coords_author):
-        return
+def preview():
+    background = pygame.image.load("data/pics/menu1.png")
     panel = pygame.image.load("data/pics/author1.png")
     panel.convert_alpha()
-    # panel = pygame.transform.scale(panel, (WIN_WIDTH, WIN_HEIGHT))
+    button_prev = ButtonText((WIN_WIDTH // 2, WIN_HEIGHT // 1.1), ' НАЗАД ', 100, clicked_start, (255, 255, 255),
+                             (0, 0, 255))  # add button
+    button_prev.centerize()  # centralize text on button
     coords = [1920, 100]
     clock = pygame.time.Clock()
     fanfars = pygame.mixer.Sound('data/audis/fanfar.wav')
     fanfars.play()
     running = True
     while running:
-        # screen.fill((0, 0, 0))
+        screen.fill((0, 0, 0))
         for event in pygame.event.get():
             if event.type == pygame.QUIT or event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE:
                 fanfars.stop()
@@ -123,13 +124,17 @@ def preview(is_active=None, coords_author=None):
             if (event.type == pygame.KEYDOWN and event.key == pygame.K_SPACE) or event.type == pygame.MOUSEBUTTONDOWN:
                 fanfars.stop()
                 running = False
+            if button_prev.update(event):
+                fanfars.stop()
+                running = False
         coords[0] -= 10
+        screen.blit(background, (0, 0))
         screen.blit(panel, coords)
+        button_prev.draw(screen)
         clock.tick(20)
         pygame.display.flip()
         if coords[0] == 0:
             coords[0] += 10
-    # menu()
 
 
 def authors(scrn=None, coords=None):
@@ -186,7 +191,9 @@ def menu():  # menu screen
             if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 return
             if event.type == pygame.MOUSEBUTTONDOWN or event.type == pygame.MOUSEMOTION:
-                button_author.update(event)
+                if button_author.update(event):
+                    print("press")
+                    preview()
                 if button_level.update(event):
                     button_level = ButtonText((0, 0), f" Текущий уровень: {settings['level']} ",
                                               28, change_level, background_color=(150, 0, 0))
@@ -351,12 +358,12 @@ def game():  # game cycle
             plane.rect.y = -plane.rect.height - 20
         camera.update(plane)
         plane.update()
-        timeshb.collided(plane)
+        timeshb.collided(plane, interface)
         bullinf.collided(plane, interface)
         for e in entities:
             if e.name == 'tank' or e.name == 'bullet' or e.name == 'enemy_plane':
                 e.update()
-            if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground' or e.name == 'enemy_plane' or e.name == 'timeshift'):
+            if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground' or e.name == 'enemy_plane'):
                 if e.name == 'tank' and not e.death:
                     interface.plus_score()
                     plane.death()
@@ -371,7 +378,7 @@ def game():  # game cycle
                     interface.plus_score()
                     b.kill()
                     e.death = True
-                    coordx = choice((randint(0, abs(plane.rect.x - 500)), randint(abs(plane.rect.x - 500), 4850)))
+                    coordx = choice((randint(0, abs(plane.rect.x - 500)), randint(abs(plane.rect.x + 500), 4850)))
                     entities.add(Tank((coordx, randint(-200, 100)), ground))
                     break
                 if b.is_collided_with(e) and e.name == 'enemy_plane':
@@ -382,7 +389,6 @@ def game():  # game cycle
             fly_sound.stop()
             interface.death()
         interface.draw(screen)
-        # timeshb.draw(screen)
         pygame.display.flip()
         timer.tick(FPS)
         if (interface.current_score % 5 == 0 and
