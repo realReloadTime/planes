@@ -2,13 +2,14 @@ import pygame
 import json
 from modules.plane import Plane
 from modules.camera import Camera
-from modules.tank import Tank
+from modules.enemies import Tank, EnemyPlane
 from modules.bullet import Bullet
 from modules.buttons import ButtonText, ButtonIcon, Label
 from modules.background import Background, Ground
 from modules.user_interface import Interface
 from modules.input import InputText
-from random import randint
+from modules.busters import TimeShift, BulletInfinity
+from random import randint, choice
 
 pygame.init()  # always uses
 pygame.font.init()  # ||-||-||
@@ -282,6 +283,9 @@ def game():  # game cycle
     plane = Plane((0, 1150), sky.rect.height)  # main character
     interface = Interface(WIN_WIDTH, WIN_HEIGHT, settings["total_score"])  # interface thing
 
+    timeshb = TimeShift((1000, 500))
+    bullinf = BulletInfinity((1000, 500))
+
     fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')  # plane sound
     bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')  # fire sound
 
@@ -296,6 +300,9 @@ def game():  # game cycle
     entities.add(sky)
     entities.add(ground)
     entities.add(plane)
+    entities.add(timeshb)
+    entities.add(bullinf)
+
     for i in range(5):
         entities.add(Tank((randint(800, total_width), randint(0, 200)), ground))
 
@@ -344,35 +351,52 @@ def game():  # game cycle
             plane.rect.y = -plane.rect.height - 20
         camera.update(plane)
         plane.update()
+        timeshb.collided(plane)
+        bullinf.collided(plane, interface)
         for e in entities:
-            if e.name == 'tank' or e.name == 'bullet':
+            if e.name == 'tank' or e.name == 'bullet' or e.name == 'enemy_plane':
                 e.update()
-            if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground'):
+            if plane.is_collided_with(e) and (e.name == 'tank' or e.name == 'ground' or e.name == 'enemy_plane' or e.name == 'timeshift'):
                 if e.name == 'tank' and not e.death:
                     interface.plus_score()
                     plane.death()
                     e.death = True
                 elif e.name == 'ground':
                     plane.death()
+                elif e.name == 'enemy_plane':
+                    interface.health -= 10
+                    e.death()
             for b in bullets:
                 if b.is_collided_with(e) and e.name == 'tank' and not e.death:  # kill tank by bullet
                     interface.plus_score()
                     b.kill()
                     e.death = True
-                    entities.add(Tank((randint(0, total_width - 200), randint(-200, 300)), ground))
+                    coordx = choice((randint(0, abs(plane.rect.x - 500)), randint(abs(plane.rect.x - 500), 4850)))
+                    entities.add(Tank((coordx, randint(-200, 100)), ground))
                     break
+                if b.is_collided_with(e) and e.name == 'enemy_plane':
+                    interface.plus_score()
+                    e.death()
             screen.blit(e.image, camera.apply(e))
         if not plane.alive:
             fly_sound.stop()
             interface.death()
         interface.draw(screen)
+        # timeshb.draw(screen)
         pygame.display.flip()
         timer.tick(FPS)
         if (interface.current_score % 5 == 0 and
                 interface.current_score != 0 and
                 prev_balance != interface.current_score):
             plane.speed += 1
+        if (interface.current_score % 2 == 0 and
+                interface.current_score != 0 and
+                prev_balance != interface.current_score):
+            entities.add(EnemyPlane((plane.rect.x, plane.rect.y), ground))
+        if not interface.alive:
+            plane.death()
         prev_balance = interface.current_score
+
     json.dump(settings, open('data/settings.json', 'w'))
     pygame.mixer.stop()
     menu()

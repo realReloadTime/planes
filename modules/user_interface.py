@@ -22,7 +22,7 @@ class Interface(pygame.sprite.Sprite):
     def draw(self, screen):
         self.surf = pygame.surface.Surface(self.window_size, pygame.SRCALPHA, 32)
         self.surf.convert_alpha()
-        if self.health == 0:
+        if self.health <= 0:
             self.death()
         balance_text = font_for_text.render(f'ТЕКУЩИЕ ОЧКИ: {self.current_score}', False, (255, 0, 0))
         total_text = font_for_text.render(f'РЕКОРД: {self.total_score}', False, (255, 0, 0))
