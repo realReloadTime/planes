@@ -103,7 +103,7 @@ if not settings["music"]:
     button_volume.cross_image()
 
 
-def preview():
+def preview():  # author's screen
     background = pygame.image.load("data/pics/menu1.png")
     panel = pygame.image.load("data/pics/author1.png")
     panel.convert_alpha()
@@ -137,10 +137,6 @@ def preview():
             coords[0] += 10
 
 
-def authors(scrn=None, coords=None):
-    pass
-
-
 def change_level():
     settings["level"] += 1
     settings["level"] %= 3
@@ -170,7 +166,7 @@ def menu():  # menu screen
     button_entname.centerize()  # centralize text on button
 
     button_author = ButtonText((WIN_WIDTH - 300, 100),
-                               ' АВТОРЫ ', 30, authors,
+                               ' АВТОРЫ ', 30, clicked_start,
                                (0, 0, 0), (0, 0, 255))
     button_author.rect[0] = WIN_WIDTH - button_author.rect[2]
     button_author.rect[1] = WIN_HEIGHT - button_author.rect[3]
@@ -291,7 +287,7 @@ def game():  # game cycle
     interface = Interface(WIN_WIDTH, WIN_HEIGHT, settings["total_score"])  # interface thing
 
     timeshb = TimeShift((1000, 500))
-    bullinf = BulletInfinity((1000, 500))
+    bullinf = BulletInfinity((2000, 700))
 
     fly_sound = pygame.mixer.Sound('data/audis/flying_plane (mp3cut.net).wav')  # plane sound
     bul_sound = pygame.mixer.Sound('data/audis/attack (mp3cut.net).wav')  # fire sound
@@ -371,7 +367,7 @@ def game():  # game cycle
                 elif e.name == 'ground':
                     plane.death()
                 elif e.name == 'enemy_plane':
-                    interface.health -= 10
+                    interface.health -= 20
                     e.death()
             for b in bullets:
                 if b.is_collided_with(e) and e.name == 'tank' and not e.death:  # kill tank by bullet

@@ -19,7 +19,6 @@ class Plane(pygame.sprite.Sprite):  # REWRITE ROTATE MOVE
         self.speed = 8
 
     def update(self):
-        print(self.speed)
         if self.alive:
             self.rect.x += cos(radians(self.angle)) * self.speed
             self.rect.y -= sin(radians(self.angle)) * self.speed
