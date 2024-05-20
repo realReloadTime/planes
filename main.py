@@ -374,7 +374,8 @@ def game():  # game cycle
                     interface.plus_score()
                     b.kill()
                     e.death = True
-                    coordx = choice((randint(0, abs(plane.rect.x - 500)), randint(abs(plane.rect.x + 500), 4850)))
+                    coordx = choice((randint(0, abs(plane.rect.x - 500)),
+                                     randint(min(abs(plane.rect.x + 500), 4850), max(abs(plane.rect.x + 500), 4850))))
                     entities.add(Tank((coordx, randint(-200, 100)), ground))
                     break
                 if b.is_collided_with(e) and e.name == 'enemy_plane':
